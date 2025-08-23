@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mermaid Test Page</title>
+</head>
+<body>
+    <h1>Mermaid Chart Test</h1>
+    
+    <h2>Flowchart Example</h2>
+    <pre><code class="language-mermaid">flowchart TD
+    A[Start] --> B[Process 1]
+    B --> C[Process 2]
+    C --> D[End]
+    A --> C
+    </code></pre>
+    
+    <h2>Sequence Diagram Example</h2>
+    <pre><code class="language-mermaid">sequenceDiagram
+    participant A as Alice
+    participant B as Bob
+    A->>B: Hello Bob, how are you?
+    B-->>A: I'm good, thanks!
+    </code></pre>
+    
+    <h2>Non-Mermaid Code (Should not be processed)</h2>
+    <pre><code class="language-javascript">function hello() {
+    console.log("Hello, world!");
+}</code></pre>
+</body>
+</html>

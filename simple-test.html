@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Mermaid Test</title>
+</head>
+<body>
+    <h1>Simple Mermaid Test</h1>
+    
+    <p>This is a test page for the Mermaid Viewer extension.</p>
+    
+    <pre><code class="language-mermaid">
+flowchart TD
+    A[Start] --> B[End]
+    </code></pre>
+    
+    <p>This code block above should be converted to a tabbed interface with Code and Chart tabs.</p>
+    
+    <script>
+        // This is just to verify the page is working
+        console.log('Page loaded');
+        
+        // Check if our extension is working
+        setTimeout(() => {
+            const mermaidElements = document.querySelectorAll('code.language-mermaid');
+            console.log('Found mermaid elements:', mermaidElements.length);
+            
+            // Check if our extension has modified the DOM
+            const tabbedContainers = document.querySelectorAll('[data-mermaid-processed]');
+            console.log('Found processed mermaid elements:', tabbedContainers.length);
+        }, 2000);
+    </script>
+</body>
+</html>
