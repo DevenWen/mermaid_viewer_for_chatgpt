@@ -13,6 +13,31 @@ mermaid.initialize({
 
 console.log('Mermaid library loaded and initialized')
 
+// Function to detect if the page is in dark mode
+function isDarkMode() {
+  // Check for dark mode class on body or html elements
+  if (document.body.classList.contains('dark') || 
+      document.documentElement.classList.contains('dark')) {
+    return true
+  }
+  
+  // Check for dark mode CSS variables
+  const bodyStyles = window.getComputedStyle(document.body)
+  const bgColor = bodyStyles.backgroundColor
+  if (bgColor) {
+    // Simple heuristic: if background is dark, assume dark mode
+    const rgb = bgColor.match(/\d+/g)
+    if (rgb) {
+      const [r, g, b] = rgb.map(Number)
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000
+      return brightness < 128
+    }
+  }
+  
+  // Check for prefers-color-scheme media query
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+}
+
 // Function to create tabbed interface
 function createTabbedInterface(element: HTMLElement, codeContent: string) {
   // Check if we've already processed this element
@@ -23,22 +48,27 @@ function createTabbedInterface(element: HTMLElement, codeContent: string) {
   // Mark element as processed
   element.setAttribute('data-mermaid-processed', 'true')
 
+  // Determine if we're in dark mode
+  const darkMode = isDarkMode()
+  
   // Create container for tabs
   const container = document.createElement('div')
   container.style.cssText = `
-    border: 1px solid #ddd;
+    border: 1px solid ${darkMode ? '#444' : '#ddd'};
     border-radius: 4px;
     margin: 10px 0;
     overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: ${darkMode ? '#1e1e1e' : '#fff'};
+    color: ${darkMode ? '#e0e0e0' : '#000'};
   `
 
   // Create tab headers
   const tabHeader = document.createElement('div')
   tabHeader.style.cssText = `
     display: flex;
-    background-color: #f5f5f5;
-    border-bottom: 1px solid #ddd;
+    background-color: ${darkMode ? '#2d2d2d' : '#f5f5f5'};
+    border-bottom: 1px solid ${darkMode ? '#444' : '#ddd'};
   `
 
   // Create code tab
@@ -52,6 +82,7 @@ function createTabbedInterface(element: HTMLElement, codeContent: string) {
     cursor: pointer;
     font-weight: 500;
     transition: background-color 0.2s;
+    color: ${darkMode ? '#e0e0e0' : '#000'};
   `
 
   // Create chart tab
@@ -65,6 +96,7 @@ function createTabbedInterface(element: HTMLElement, codeContent: string) {
     cursor: pointer;
     font-weight: 500;
     transition: background-color 0.2s;
+    color: ${darkMode ? '#e0e0e0' : '#000'};
   `
 
   // Create tab content containers
@@ -73,6 +105,8 @@ function createTabbedInterface(element: HTMLElement, codeContent: string) {
     padding: 16px;
     display: block;
     overflow-x: auto;
+    background-color: ${darkMode ? '#1e1e1e' : '#fff'};
+    color: ${darkMode ? '#e0e0e0' : '#000'};
   `
 
   const chartContentDiv = document.createElement('div')
@@ -81,16 +115,19 @@ function createTabbedInterface(element: HTMLElement, codeContent: string) {
     display: none;
     min-height: 200px;
     text-align: center;
+    background-color: ${darkMode ? '#1e1e1e' : '#fff'};
+    color: ${darkMode ? '#e0e0e0' : '#000'};
   `
   chartContentDiv.innerHTML = '<div>Click "Chart" tab to render diagram</div>'
 
   // Set up initial content
   codeContentDiv.textContent = codeContent
   codeContentDiv.style.whiteSpace = 'pre'
+  codeContentDiv.style.fontFamily = 'monospace'
 
   // Add event listeners for tab switching
   codeTab.addEventListener('click', () => {
-    codeTab.style.backgroundColor = '#fff'
+    codeTab.style.backgroundColor = darkMode ? '#3a3a3a' : '#fff'
     chartTab.style.backgroundColor = 'transparent'
     codeContentDiv.style.display = 'block'
     chartContentDiv.style.display = 'none'
@@ -98,16 +135,16 @@ function createTabbedInterface(element: HTMLElement, codeContent: string) {
 
   chartTab.addEventListener('click', () => {
     codeTab.style.backgroundColor = 'transparent'
-    chartTab.style.backgroundColor = '#fff'
+    chartTab.style.backgroundColor = darkMode ? '#3a3a3a' : '#fff'
     codeContentDiv.style.display = 'none'
     chartContentDiv.style.display = 'block'
     
     // Render chart when switching to chart tab
-    renderMermaidChart(codeContent, chartContentDiv)
+    renderMermaidChart(codeContent, chartContentDiv, darkMode)
   })
 
   // Set initial active tab
-  codeTab.style.backgroundColor = '#fff'
+  codeTab.style.backgroundColor = darkMode ? '#3a3a3a' : '#fff'
 
   // Assemble the UI
   tabHeader.appendChild(codeTab)
@@ -130,12 +167,18 @@ function createTabbedInterface(element: HTMLElement, codeContent: string) {
 }
 
 // Function to render Mermaid chart
-function renderMermaidChart(codeContent: string, container: HTMLElement) {
+function renderMermaidChart(codeContent: string, container: HTMLElement, darkMode: boolean) {
   // Clear previous content
   container.innerHTML = '<div>Rendering chart...</div>'
   
   try {
     console.log('Rendering Mermaid chart with content:', codeContent.substring(0, 100) + '...')
+    
+    // Temporarily set Mermaid theme based on dark mode
+    const originalTheme = mermaid.mermaidAPI.getConfig().theme
+    mermaid.mermaidAPI.updateSiteConfig({
+      theme: darkMode ? 'dark' : 'default'
+    })
     
     // Use Mermaid to render the chart
     mermaid.render(
@@ -143,14 +186,25 @@ function renderMermaidChart(codeContent: string, container: HTMLElement) {
       codeContent
     ).then((renderResult: { svg: string }) => {
       container.innerHTML = renderResult.svg
+      
+      // Revert to original theme
+      mermaid.mermaidAPI.updateSiteConfig({
+        theme: originalTheme
+      })
+      
       console.log('Chart rendered successfully')
     }).catch((error: unknown) => {
       console.error('Error rendering Mermaid chart:', error)
-      container.innerHTML = `<div style="color: red;">Error rendering chart: ${(error as Error).message}</div>`
+      container.innerHTML = `<div style="color: ${darkMode ? '#ff6b6b' : 'red'};">Error rendering chart: ${(error as Error).message}</div>`
+      
+      // Revert to original theme
+      mermaid.mermaidAPI.updateSiteConfig({
+        theme: originalTheme
+      })
     })
   } catch (error: unknown) {
     console.error('Error rendering Mermaid chart:', error)
-    container.innerHTML = `<div style="color: red;">Error rendering chart: ${(error as Error).message}</div>`
+    container.innerHTML = `<div style="color: ${darkMode ? '#ff6b6b' : 'red'};">Error rendering chart: ${(error as Error).message}</div>`
   }
 }
 
