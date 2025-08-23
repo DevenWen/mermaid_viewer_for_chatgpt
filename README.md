@@ -1,5 +1,11 @@
 # mermaid_viewer_for_chatgpt
 
+A Chrome extension that allows users to render Mermaid diagrams directly within the ChatGPT chat.
+
+一个允许用户直接在 ChatGPT 聊天页面中直接渲染 mermaid 图的 Chrome 插件
+
+![alt text](assets/image/README/image.png)
+
 > a chrome extension tools built with Vite + React, and Manifest v3
 
 ## Installing
