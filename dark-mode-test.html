@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dark Mode Test for Mermaid Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        
+        /* Light mode by default */
+        body {
+            background-color: #fff;
+            color: #000;
+        }
+        
+        /* Dark mode */
+        body.dark-mode {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+        
+        .toggle-button {
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .toggle-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dark Mode Test for Mermaid Viewer</h1>
+    
+    <button class="toggle-button" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+    
+    <h2>Flowchart Example</h2>
+    <pre><code class="language-mermaid">flowchart TD
+    A[Start] --> B[Process 1]
+    B --> C[Process 2]
+    C --> D[End]
+    A --> C</code></pre>
+    
+    <h2>Sequence Diagram Example</h2>
+    <pre><code class="language-mermaid">sequenceDiagram
+    participant A as Alice
+    participant B as Bob
+    A->>B: Hello Bob, how are you?
+    B-->>A: I'm good, thanks!</code></pre>
+    
+    <script>
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+        }
+    </script>
+</body>
+</html>
