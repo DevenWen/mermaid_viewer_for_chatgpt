@@ -38,8 +38,8 @@ function isDarkMode() {
   return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
 }
 
-// Function to create tabbed interface
-function createTabbedInterface(element: HTMLElement, codeContent: string) {
+// Function to create render button for mermaid code blocks
+function createRenderButton(element: HTMLElement) {
   // Check if we've already processed this element
   if (element.hasAttribute('data-mermaid-processed')) {
     return
@@ -51,125 +51,51 @@ function createTabbedInterface(element: HTMLElement, codeContent: string) {
   // Determine if we're in dark mode
   const darkMode = isDarkMode()
   
-  // Create container for tabs
-  const container = document.createElement('div')
-  container.style.cssText = `
-    border: 1px solid ${darkMode ? '#444' : '#ddd'};
-    border-radius: 4px;
-    margin: 10px 0;
-    overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    background-color: ${darkMode ? '#1e1e1e' : '#fff'};
-    color: ${darkMode ? '#e0e0e0' : '#000'};
-  `
+  // Create render button with link-like styling
+  const renderButton = document.createElement('a')
+  renderButton.id = 'RenderDigram'
+  renderButton.textContent = '#Diagram'
+  renderButton.href = 'javascript:void(0)'
+  renderButton.className = 'mermaid-render-button'
+  if (darkMode) {
+    renderButton.classList.add('dark-mode')
+  }
 
-  // Create tab headers
-  const tabHeader = document.createElement('div')
-  tabHeader.style.cssText = `
-    display: flex;
-    background-color: ${darkMode ? '#2d2d2d' : '#f5f5f5'};
-    border-bottom: 1px solid ${darkMode ? '#444' : '#ddd'};
-  `
+  // Create chart container (initially hidden)
+  const chartContainer = document.createElement('div')
+  chartContainer.className = 'mermaid-chart-container'
+  if (darkMode) {
+    chartContainer.classList.add('dark-mode')
+  }
+  chartContainer.innerHTML = '<div class="mermaid-loading">Click "Render" to generate diagram</div>'
 
-  // Create code tab
-  const codeTab = document.createElement('button')
-  codeTab.textContent = 'Code'
-  codeTab.style.cssText = `
-    flex: 1;
-    padding: 8px 16px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.2s;
-    color: ${darkMode ? '#e0e0e0' : '#000'};
-  `
-
-  // Create chart tab
-  const chartTab = document.createElement('button')
-  chartTab.textContent = 'Chart'
-  chartTab.style.cssText = `
-    flex: 1;
-    padding: 8px 16px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.2s;
-    color: ${darkMode ? '#e0e0e0' : '#000'};
-  `
-
-  // Create tab content containers
-  const codeContentDiv = document.createElement('div')
-  codeContentDiv.style.cssText = `
-    padding: 16px;
-    display: block;
-    overflow-x: auto;
-    background-color: ${darkMode ? '#1e1e1e' : '#fff'};
-    color: ${darkMode ? '#e0e0e0' : '#000'};
-  `
-
-  const chartContentDiv = document.createElement('div')
-  chartContentDiv.style.cssText = `
-    padding: 16px;
-    display: none;
-    min-height: 200px;
-    text-align: center;
-    background-color: ${darkMode ? '#1e1e1e' : '#fff'};
-    color: ${darkMode ? '#e0e0e0' : '#000'};
-  `
-  chartContentDiv.innerHTML = '<div>Click "Chart" tab to render diagram</div>'
-
-  // Set up initial content
-  codeContentDiv.textContent = codeContent
-  codeContentDiv.style.whiteSpace = 'pre'
-  codeContentDiv.style.fontFamily = 'monospace'
-
-  // Add event listeners for tab switching
-  codeTab.addEventListener('click', () => {
-    codeTab.style.backgroundColor = darkMode ? '#3a3a3a' : '#fff'
-    chartTab.style.backgroundColor = 'transparent'
-    codeContentDiv.style.display = 'block'
-    chartContentDiv.style.display = 'none'
+  // Add event listener to render button - get fresh content on click
+  renderButton.addEventListener('click', () => {
+    // Get the current content of the code element
+    const codeContent = element.textContent || ''
+    renderMermaidChart(codeContent, chartContainer, darkMode, renderButton)
   })
 
-  chartTab.addEventListener('click', () => {
-    codeTab.style.backgroundColor = 'transparent'
-    chartTab.style.backgroundColor = darkMode ? '#3a3a3a' : '#fff'
-    codeContentDiv.style.display = 'none'
-    chartContentDiv.style.display = 'block'
-    
-    // Render chart when switching to chart tab
-    renderMermaidChart(codeContent, chartContentDiv, darkMode)
-  })
-
-  // Set initial active tab
-  codeTab.style.backgroundColor = darkMode ? '#3a3a3a' : '#fff'
-
-  // Assemble the UI
-  tabHeader.appendChild(codeTab)
-  tabHeader.appendChild(chartTab)
-  container.appendChild(tabHeader)
-  container.appendChild(codeContentDiv)
-  container.appendChild(chartContentDiv)
-
-  // Find the parent element to replace
-  // If the code element is inside a pre element, replace the pre element
-  // Otherwise replace the code element directly
+  // Insert button and chart container after the code element
+  // If the code element is inside a pre element, insert after the pre element
+  // Otherwise insert after the code element directly
   const parentElement = element.parentElement
   if (parentElement && parentElement.tagName === 'PRE') {
-    parentElement.parentNode!.replaceChild(container, parentElement)
+    parentElement.parentNode!.insertBefore(renderButton, parentElement.nextSibling)
+    parentElement.parentNode!.insertBefore(chartContainer, renderButton.nextSibling)
   } else {
-    element.parentNode!.replaceChild(container, element)
+    element.parentNode!.insertBefore(renderButton, element.nextSibling)
+    element.parentNode!.insertBefore(chartContainer, renderButton.nextSibling)
   }
   
-  console.log('Created tabbed interface for mermaid element')
+  console.log('Created render button for mermaid element')
 }
 
 // Function to render Mermaid chart
-function renderMermaidChart(codeContent: string, container: HTMLElement, darkMode: boolean) {
-  // Clear previous content
-  container.innerHTML = '<div>Rendering chart...</div>'
+function renderMermaidChart(codeContent: string, container: HTMLElement, darkMode: boolean, renderButton: HTMLElement) {
+  // Show container and display loading message
+  container.style.display = 'block'
+  container.innerHTML = '<div class="mermaid-loading">Rendering chart...</div>'
   
   try {
     console.log('Rendering Mermaid chart with content:', codeContent.substring(0, 100) + '...')
@@ -185,7 +111,39 @@ function renderMermaidChart(codeContent: string, container: HTMLElement, darkMod
       'mermaid-chart-' + Date.now(),
       codeContent
     ).then((renderResult: { svg: string }) => {
-      container.innerHTML = renderResult.svg
+      // Create a wrapper div for the SVG
+      const svgWrapper = document.createElement('div')
+      svgWrapper.className = 'mermaid-svg-wrapper'
+      
+      // Add the SVG
+      svgWrapper.innerHTML = renderResult.svg
+      
+      // Apply responsive styling to the SVG
+      const svgElement = svgWrapper.querySelector('svg')
+      if (svgElement) {
+        svgElement.style.maxWidth = '100%'
+        svgElement.style.height = 'auto'
+      }
+      
+      // Create close button
+      const closeButton = document.createElement('button')
+      closeButton.textContent = '#close'
+      closeButton.className = 'mermaid-close-button'
+      if (darkMode) {
+        closeButton.classList.add('dark-mode')
+      }
+      
+      // Add event listener to close button
+      closeButton.addEventListener('click', () => {
+        container.style.display = 'none'
+        // Reset the container content for next render
+        container.innerHTML = '<div class="mermaid-loading">Click "Render" to generate diagram</div>'
+      })
+      
+      // Clear container and add elements
+      container.innerHTML = ''
+      container.appendChild(closeButton)
+      container.appendChild(svgWrapper)
       
       // Revert to original theme
       mermaid.mermaidAPI.updateSiteConfig({
@@ -195,7 +153,7 @@ function renderMermaidChart(codeContent: string, container: HTMLElement, darkMod
       console.log('Chart rendered successfully')
     }).catch((error: unknown) => {
       console.error('Error rendering Mermaid chart:', error)
-      container.innerHTML = `<div style="color: ${darkMode ? '#ff6b6b' : 'red'};">Error rendering chart: ${(error as Error).message}</div>`
+      container.innerHTML = `<div class="mermaid-error${darkMode ? ' dark-mode' : ''}">Error rendering chart: ${(error as Error).message}</div>`
       
       // Revert to original theme
       mermaid.mermaidAPI.updateSiteConfig({
@@ -204,7 +162,7 @@ function renderMermaidChart(codeContent: string, container: HTMLElement, darkMod
     })
   } catch (error: unknown) {
     console.error('Error rendering Mermaid chart:', error)
-    container.innerHTML = `<div style="color: ${darkMode ? '#ff6b6b' : 'red'};">Error rendering chart: ${(error as Error).message}</div>`
+    container.innerHTML = `<div class="mermaid-error${darkMode ? ' dark-mode' : ''}">Error rendering chart: ${(error as Error).message}</div>`
   }
 }
 
@@ -220,11 +178,10 @@ function processMermaidCodeElements() {
   
   // Process each mermaid code element
   mermaidCodeElements.forEach((element, index) => {
-    const codeContent = element.textContent || ''
-    console.log(`Mermaid code element ${index + 1}:`, codeContent.substring(0, 50) + '...')
+    console.log(`Mermaid code element ${index + 1}: Setting up render button`)
     
-    // Create tabbed interface for this element
-    createTabbedInterface(element as HTMLElement, codeContent)
+    // Create render button for this element
+    createRenderButton(element as HTMLElement)
   })
 }
 
