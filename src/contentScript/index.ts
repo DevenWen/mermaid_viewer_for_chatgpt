@@ -16,11 +16,11 @@ console.log('Mermaid library loaded and initialized')
 // Function to detect if the page is in dark mode
 function isDarkMode() {
   // Check for dark mode class on body or html elements
-  if (document.body.classList.contains('dark') || 
+  if (document.body.classList.contains('dark') ||
       document.documentElement.classList.contains('dark')) {
     return true
   }
-  
+
   // Check for dark mode CSS variables
   const bodyStyles = window.getComputedStyle(document.body)
   const bgColor = bodyStyles.backgroundColor
@@ -33,9 +33,28 @@ function isDarkMode() {
       return brightness < 128
     }
   }
-  
+
   // Check for prefers-color-scheme media query
   return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+}
+
+// Function to detect if code content is Mermaid diagram
+function isMermaidCode(codeText: string): boolean {
+  // Remove leading/trailing whitespace
+  const trimmed = codeText.trim()
+
+  // Check for common Mermaid diagram keywords
+  // These are the most common diagram types
+  const mermaidKeywords = [
+    'graph', 'flowchart', 'sequenceDiagram', 'classDiagram',
+    'stateDiagram', 'erDiagram', 'journey', 'gitgraph',
+    'mindmap', 'timeline', 'quadrantChart', 'xychart-beta'
+  ]
+
+  // Check if the first word (or first two words for 'flow chart') matches a Mermaid keyword
+  const firstWordMatch = trimmed.match(/^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|journey|gitgraph|mindmap|timeline|quadrantChart|xychart-beta)/)
+
+  return firstWordMatch !== null
 }
 
 // Function to create render button for mermaid code blocks
@@ -169,17 +188,31 @@ function renderMermaidChart(codeContent: string, container: HTMLElement, darkMod
 // Function to process mermaid code elements
 function processMermaidCodeElements() {
   console.log('Processing mermaid code elements...')
-  
-  // Get all code elements with the mermaid language class
-  const mermaidCodeElements = document.querySelectorAll('code.language-mermaid')
-  
-  // Log the number of mermaid code elements found
-  console.log(`Found ${mermaidCodeElements.length} mermaid code elements on the page`)
-  
-  // Process each mermaid code element
-  mermaidCodeElements.forEach((element, index) => {
+
+  // Get all potential code elements from both ChatGPT and Gemini
+  const chatgptElements = document.querySelectorAll('code.language-mermaid')
+  const geminiElements = document.querySelectorAll('code[data-test-id="code-content"]')
+
+  // Combine all elements
+  const allCodeElements: Element[] = []
+  chatgptElements.forEach(el => allCodeElements.push(el))
+  geminiElements.forEach(el => allCodeElements.push(el))
+
+  console.log(`Found ${allCodeElements.length} potential mermaid code elements on the page`)
+
+  // Process each potential mermaid code element
+  allCodeElements.forEach((element, index) => {
+    // Get the text content
+    const codeContent = element.textContent || ''
+
+    // Check if this is actually Mermaid code using content detection
+    if (!isMermaidCode(codeContent)) {
+      console.log(`Element ${index + 1} is not Mermaid code, skipping`)
+      return
+    }
+
     console.log(`Mermaid code element ${index + 1}: Setting up render button`)
-    
+
     // Create render button for this element
     createRenderButton(element as HTMLElement)
   })
