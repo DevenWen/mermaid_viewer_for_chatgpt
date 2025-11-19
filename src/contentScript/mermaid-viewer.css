@@ -87,3 +87,113 @@
 .mermaid-error.dark-mode {
   color: #ff6b6b;
 }
+
+/* Modal styles */
+.mermaid-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 2147483647 !important;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.mermaid-modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.mermaid-modal-container {
+  background-color: #D6D6D6 !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 1200px;
+  min-width: 400px;
+  min-height: 300px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.mermaid-modal-overlay.active .mermaid-modal-container {
+  transform: scale(1);
+}
+
+.mermaid-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  z-index: 2147483647;
+  color: #333;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  transition: background 0.2s ease;
+}
+
+.mermaid-modal-close:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+.mermaid-modal-chart {
+  flex: 1;
+  overflow: visible;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  cursor: grab;
+}
+
+.mermaid-modal-chart:active {
+  cursor: grabbing;
+}
+
+.mermaid-modal-chart-content {
+  transform-origin: 0 0;
+  transition: transform 0.1s ease-out;
+  cursor: move;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mermaid-modal-chart-content svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .mermaid-modal-container {
+    width: 95vw;
+    max-width: 95vw;
+    min-width: 280px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mermaid-modal-container {
+    width: 98vw;
+    max-width: 98vw;
+    min-height: 250px;
+  }
+}
