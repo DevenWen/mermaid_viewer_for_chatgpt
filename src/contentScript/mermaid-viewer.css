@@ -166,8 +166,8 @@
 }
 
 .mermaid-modal-chart-content {
-  transform-origin: 0 0;
-  transition: transform 0.1s ease-out;
+  /* transform-origin is dynamically set by JavaScript based on mouse position */
+  transition: transform 0.05s ease-out;
   cursor: move;
   background-color: #fff;
   padding: 20px;
