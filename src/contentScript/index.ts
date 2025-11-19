@@ -162,24 +162,10 @@ function setupZoomPan(modal: HTMLElement): () => void {
   // Initial transform reset
   updateTransform(chartContent as HTMLElement)
 
-  // Function to get mouse position relative to chart content
-  const getMousePosition = (e: WheelEvent | MouseEvent) => {
-    const rect = (chartContent as HTMLElement).getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    return { x, y, rect }
-  }
-
-  // Animation frame for performance optimization
-  let frameId: number | null = null
-
   // Handle wheel event for zooming
   const handleWheel = (e: WheelEvent) => {
     e.preventDefault()
     e.stopPropagation()
-
-    // Get mouse position relative to chart
-    const { x, y, rect } = getMousePosition(e)
 
     // Calculate zoom factor
     const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1
@@ -187,32 +173,9 @@ function setupZoomPan(modal: HTMLElement): () => void {
 
     // Clamp zoom level
     if (newZoomLevel >= minZoom && newZoomLevel <= maxZoom) {
-      const oldZoomLevel = zoomLevel
       zoomLevel = newZoomLevel
-
-      // Calculate the position of mouse relative to chart before zoom
-      // Formula: mouse_before = (mouse_screen - pan) / old_zoom
-      const mouseXBefore = (x - panX) / oldZoomLevel
-      const mouseYBefore = (y - panY) / oldZoomLevel
-
-      // Adjust pan to keep mouse position stable
-      // New pan = mouse_screen - mouse_before * new_zoom
-      panX = x - mouseXBefore * zoomLevel
-      panY = y - mouseYBefore * zoomLevel
-
-      // Dynamically set transform-origin to mouse position
-      const originX = (x / rect.width) * 100
-      const originY = (y / rect.height) * 100
-      ;(chartContent as HTMLElement).style.transformOrigin = `${originX}% ${originY}%`
-
-      // Use requestAnimationFrame for performance
-      if (frameId) cancelAnimationFrame(frameId)
-      frameId = requestAnimationFrame(() => {
-        updateTransform(chartContent as HTMLElement, zoomLevel, panX, panY)
-        frameId = null
-      })
-
-      console.log('Zoom level:', zoomLevel, 'at position:', x, y)
+      updateTransform(chartContent as HTMLElement, zoomLevel, panX, panY)
+      console.log('Zoom level:', zoomLevel)
     }
   }
 
@@ -265,7 +228,6 @@ function setupZoomPan(modal: HTMLElement): () => void {
     chartContent.removeEventListener('mousedown', handleMouseDown)
     document.removeEventListener('mousemove', handleMouseMove)
     document.removeEventListener('mouseup', handleMouseUp)
-    if (frameId) cancelAnimationFrame(frameId)
     console.log('Zoom and pan event listeners cleaned up')
   }
 }
