@@ -151,8 +151,8 @@ function setupZoomPan(modal: HTMLElement): () => void {
 
   // Reset zoom and pan state
   let zoomLevel = 1
-  const minZoom = 0.5
-  const maxZoom = 3
+  const minZoom = 0.05
+  const maxZoom = 20
   let panX = 0
   let panY = 0
   let isDragging = false
