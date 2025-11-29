@@ -1,7 +1,7 @@
 {
   "name": "mermaid_viewer_for_chatgpt",
   "displayName": "mermaid_viewer_for_chatgpt",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "author": "**",
   "description": "",
   "type": "module",

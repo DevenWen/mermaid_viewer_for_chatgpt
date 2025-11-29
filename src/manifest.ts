@@ -27,19 +27,17 @@ export default defineManifest({
   },
   content_scripts: [
     {
-      matches: ['http://*/*', 'https://*/*'],
+      matches: ['https://chatgpt.com/*', 'https://chat.openai.com/*', 'https://gemini.google.com/*'],
       js: ['src/contentScript/index.ts'],
       run_at: 'document_end'
     },
   ],
-  side_panel: {
-    default_path: 'sidepanel.html',
-  },
+
   web_accessible_resources: [
     {
       resources: ['img/logo-16.png', 'img/logo-32.png', 'img/logo-48.png', 'img/logo-128.png'],
       matches: [],
     },
   ],
-  permissions: ['sidePanel', 'storage'],
+  permissions: ['storage'],
 })
