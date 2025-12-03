@@ -104,6 +104,16 @@ function createRenderButton(element: HTMLElement) {
     renderButton.classList.add('dark-mode')
   }
 
+  // Create sidebar button
+  const sidebarButton = document.createElement('a')
+  sidebarButton.id = 'MoveToSidebar'
+  sidebarButton.textContent = '#Sidebar'
+  sidebarButton.href = 'javascript:void(0)'
+  sidebarButton.className = 'mermaid-render-button-sidebar'
+  if (darkMode) {
+    sidebarButton.classList.add('dark-mode')
+  }
+
   // Create chart container (initially hidden)
   const chartContainer = document.createElement('div')
   chartContainer.className = 'mermaid-chart-container'
@@ -119,16 +129,25 @@ function createRenderButton(element: HTMLElement) {
     renderMermaidChart(codeContent, chartContainer, darkMode, renderButton)
   })
 
+  // Add event listener to sidebar button - move chart to sidebar
+  sidebarButton.addEventListener('click', () => {
+    // Get the current content of the code element
+    const codeContent = element.textContent || ''
+    moveChartToSidebar(codeContent, element, renderButton, chartContainer)
+  })
+
   // Insert button and chart container after the code element
   // If the code element is inside a pre element, insert after the pre element
   // Otherwise insert after the code element directly
   const parentElement = element.parentElement
   if (parentElement && parentElement.tagName === 'PRE') {
     parentElement.parentNode!.insertBefore(renderButton, parentElement.nextSibling)
-    parentElement.parentNode!.insertBefore(chartContainer, renderButton.nextSibling)
+    parentElement.parentNode!.insertBefore(sidebarButton, renderButton.nextSibling)
+    parentElement.parentNode!.insertBefore(chartContainer, sidebarButton.nextSibling)
   } else {
     element.parentNode!.insertBefore(renderButton, element.nextSibling)
-    element.parentNode!.insertBefore(chartContainer, renderButton.nextSibling)
+    element.parentNode!.insertBefore(sidebarButton, renderButton.nextSibling)
+    element.parentNode!.insertBefore(chartContainer, sidebarButton.nextSibling)
   }
   
   console.log('Created render button for mermaid element')
@@ -137,6 +156,11 @@ function createRenderButton(element: HTMLElement) {
 // Global variable to track current modal state and cleanup functions
 let currentModal: HTMLElement | null = null
 let currentCleanup: (() => void) | null = null
+
+// Sidebar state management
+let currentSidebar: HTMLElement | null = null
+let sidebarActiveChart: HTMLElement | null = null
+let chartOriginalPosition: { element: HTMLElement, button: HTMLElement, container: HTMLElement } | null = null
 
 // Function to setup zoom and pan functionality
 // Returns a cleanup function to remove event listeners
@@ -235,6 +259,224 @@ function setupZoomPan(modal: HTMLElement): () => void {
 // Function to update transform on chart content
 function updateTransform(element: HTMLElement, zoom = 1, panX = 0, panY = 0) {
   element.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`
+}
+
+// Function to create Mermaid sidebar
+function createMermaidSidebar() {
+  // Check if sidebar already exists
+  if (currentSidebar) {
+    return currentSidebar
+  }
+
+  const darkMode = isDarkMode()
+
+  // Create sidebar container
+  const sidebar = document.createElement('div')
+  sidebar.className = `mermaid-sidebar${darkMode ? ' dark-mode' : ''}`
+  sidebar.id = 'mermaid-sidebar'
+
+  // Create header
+  const header = document.createElement('div')
+  header.className = 'mermaid-sidebar-header'
+
+  // Create title
+  const title = document.createElement('h3')
+  title.className = 'mermaid-sidebar-title'
+  title.textContent = 'Diagram Viewer'
+
+  // Create close button
+  const closeButton = document.createElement('button')
+  closeButton.className = 'mermaid-sidebar-close'
+  closeButton.innerHTML = '×'
+  closeButton.setAttribute('aria-label', 'Close sidebar')
+
+  // Create content area
+  const content = document.createElement('div')
+  content.className = 'mermaid-sidebar-content'
+  content.id = 'mermaid-sidebar-content'
+
+  // Assemble sidebar
+  header.appendChild(title)
+  header.appendChild(closeButton)
+  sidebar.appendChild(header)
+  sidebar.appendChild(content)
+
+  // Store reference
+  currentSidebar = sidebar
+
+  // Add event listeners
+  closeButton.addEventListener('click', closeSidebar)
+
+  console.log('Created mermaid sidebar')
+  return sidebar
+}
+
+// Function to open Mermaid sidebar
+function openSidebar() {
+  // Create sidebar if it doesn't exist
+  const sidebar = createMermaidSidebar()
+
+  // Add to document if not already added
+  if (!sidebar.parentNode) {
+    document.body.appendChild(sidebar)
+  }
+
+  // Trigger animation
+  setTimeout(() => {
+    sidebar.classList.add('active')
+  }, 10)
+
+  // Setup ESC key handler
+  setupSidebarKeyHandler()
+
+  console.log('Sidebar opened')
+}
+
+// Function to close Mermaid sidebar
+function closeSidebar() {
+  if (!currentSidebar) {
+    return
+  }
+
+  const sidebar = currentSidebar
+  sidebar.classList.remove('active')
+
+  // Remove after animation completes
+  setTimeout(() => {
+    if (sidebar.parentNode) {
+      sidebar.parentNode.removeChild(sidebar)
+    }
+    // Restore chart to original position if still in sidebar
+    if (chartOriginalPosition && sidebarActiveChart) {
+      restoreChartToOriginal()
+    }
+    console.log('Sidebar closed and removed from DOM')
+  }, 300)
+}
+
+// Function to setup sidebar keyboard handler
+function setupSidebarKeyHandler() {
+  const handleEscKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      closeSidebar()
+      document.removeEventListener('keydown', handleEscKey)
+    }
+  }
+  document.addEventListener('keydown', handleEscKey)
+}
+
+// Function to move chart to sidebar
+function moveChartToSidebar(codeContent: string, sourceElement: HTMLElement, sourceButton: HTMLElement, sourceContainer: HTMLElement) {
+  const darkMode = isDarkMode()
+
+  // Open sidebar if not already open
+  if (!currentSidebar) {
+    openSidebar()
+  }
+
+  // Get sidebar content area
+  const contentArea = document.getElementById('mermaid-sidebar-content')
+  if (!contentArea) {
+    console.error('Sidebar content area not found')
+    return
+  }
+
+  // Show loading
+  contentArea.innerHTML = '<div class="mermaid-loading">Rendering chart...</div>'
+
+  // Render the chart
+  renderMermaidChartInModal(codeContent, darkMode)
+    .then((chartContent) => {
+      // Clear content area
+      contentArea.innerHTML = ''
+
+      // Create chart wrapper with return button
+      const chartWrapper = document.createElement('div')
+      chartWrapper.className = 'mermaid-sidebar-chart'
+      chartWrapper.style.position = 'relative'
+
+      // Create return button
+      const returnButton = document.createElement('button')
+      returnButton.className = 'mermaid-sidebar-return'
+      returnButton.textContent = 'Return to Page'
+      returnButton.addEventListener('click', restoreChartToOriginal)
+
+      // Add chart content and return button
+      chartWrapper.appendChild(returnButton)
+      chartWrapper.appendChild(chartContent)
+      contentArea.appendChild(chartWrapper)
+
+      // Store the active chart and original position
+      sidebarActiveChart = chartWrapper
+      chartOriginalPosition = {
+        element: sourceElement,
+        button: sourceButton,
+        container: sourceContainer
+      }
+
+      // Update source position to show placeholder
+      updateSourcePositionPlaceholder(sourceContainer, sourceButton)
+
+      console.log('Chart moved to sidebar successfully')
+    })
+    .catch((error) => {
+      console.error('Error rendering chart in sidebar:', error)
+      contentArea.innerHTML = `<div class="mermaid-error${darkMode ? ' dark-mode' : ''}">Error rendering chart: ${(error as Error).message}</div>`
+    })
+}
+
+// Function to update source position with placeholder
+function updateSourcePositionPlaceholder(container: HTMLElement, button: HTMLElement) {
+  // Hide the button
+  button.style.display = 'none'
+
+  // Create placeholder
+  const placeholder = document.createElement('div')
+  placeholder.className = 'mermaid-sidebar-chart-placeholder'
+  placeholder.innerHTML = 'Chart moved to sidebar'
+  placeholder.style.display = 'block'
+
+  // Insert placeholder
+  container.parentNode!.insertBefore(placeholder, container.nextSibling)
+
+  // Store placeholder reference
+  ;(container as any).placeholderElement = placeholder
+}
+
+// Function to restore chart to original position
+function restoreChartToOriginal() {
+  if (!chartOriginalPosition || !sidebarActiveChart) {
+    console.warn('No chart to restore or missing original position data')
+    return
+  }
+
+  const { element, button, container } = chartOriginalPosition
+
+  // Remove placeholder if it exists
+  if ((container as any).placeholderElement) {
+    const placeholder = (container as any).placeholderElement
+    if (placeholder.parentNode) {
+      placeholder.parentNode.removeChild(placeholder)
+    }
+    ;(container as any).placeholderElement = null
+  }
+
+  // Show the button again
+  button.style.display = 'inline-block'
+
+  // Clear sidebar
+  if (currentSidebar) {
+    const contentArea = document.getElementById('mermaid-sidebar-content')
+    if (contentArea) {
+      contentArea.innerHTML = ''
+    }
+  }
+
+  // Reset state
+  sidebarActiveChart = null
+  chartOriginalPosition = null
+
+  console.log('Chart restored to original position')
 }
 
 // Function to create Mermaid modal
