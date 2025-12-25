@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mermaid Sidebar Test Page</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        pre {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: 'Courier New', monospace;
+        }
+        .test-section {
+            margin: 40px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .instructions {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            margin: 20px 0;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mermaid Sidebar Feature Test Page</h1>
+
+    <div class="instructions">
+        <h3>测试说明</h3>
+        <ol>
+            <li>加载Chrome扩展（build文件夹）</li>
+            <li>点击 <strong>#Diagram</strong> 按钮在模态框中查看图表</li>
+            <li>点击 <strong>#Sidebar</strong> 按钮将图表移动到右侧侧边栏</li>
+            <li>在侧边栏中点击 <strong>Return to Page</strong> 按钮恢复图表到原位置</li>
+            <li>按 <strong>ESC</strong> 键关闭侧边栏</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>测试1: 简单流程图</h2>
+        <p>测试基本的流程图在侧边栏中的显示：</p>
+        <pre><code class="language-mermaid">graph TD
+    A[Start] --> B{Is it?}
+    B -->|Yes| C[OK]
+    C --> D[Rethink]
+    D --> B
+    B ---->|No| E[End]</code></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>测试2: 复杂流程图</h2>
+        <p>测试更复杂的图表：</p>
+        <pre><code class="language-mermaid">flowchart LR
+    A[Hard edge] --> B(Round edge)
+    B --> C{Decision}
+    C --> D[Result one]
+    C --> E[Result two]
+    subgraph "subgraph name"
+        F[Node 1]
+        G[Node 2]
+        H[Node 3]
+    end</code></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>测试3: 时序图</h2>
+        <p>测试时序图在侧边栏中的渲染：</p>
+        <pre><code class="language-mermaid">sequenceDiagram
+    participant A as Alice
+    participant B as Bob
+    A->>B: Hello Bob, how are you?
+    B-->>A: Great thanks!
+    A-)B: See you later!</code></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>测试4: 状态图</h2>
+        <p>测试状态图：</p>
+        <pre><code class="language-mermaid">stateDiagram-v2
+    [*] --> Still
+    Still --> [*]
+    Still --> Moving
+    Moving --> Still
+    Moving --> Crash
+    Crash --> [*]</code></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>测试5: 类图</h2>
+        <p>测试类图：</p>
+        <pre><code class="language-mermaid">classDiagram
+    class Animal {
+        +String name
+        +int age
+        +makeSound()
+    }
+    class Dog {
+        +bark()
+    }
+    Animal <|-- Dog</code></pre>
+    </div>
+
+    <div style="height: 200px;"></div>
+    <p style="text-align: center; color: #999; margin-top: 50px;">
+        Scroll down to test sidebar persistence during page scroll
+    </p>
+    <div style="height: 300px;"></div>
+
+    <div class="test-section">
+        <h2>测试6: 多个图表（用于测试切换）</h2>
+        <p>在侧边栏中查看一个图表后，点击另一个图表的#Sidebar按钮：</p>
+        <pre><code class="language-mermaid">graph TD
+    X[Test Chart 1] --> Y[Click #Sidebar]
+    Y --> Z[Watch it appear in sidebar]
+    Z --> W[Then click another chart's #Sidebar]
+    W --> V[First chart returns to page]
+    V --> U[Second chart appears in sidebar]</code></pre>
+    <p>第二个测试图表：</p>
+        <pre><code class="language-mermaid">graph LR
+    1[First Chart] --> 2[Move to sidebar]
+    2 --> 3[Then move this one]
+    3 --> 4[First returns, second appears]
+    4 --> 5[Success!]</code></pre>
+    </div>
+
+    <div style="height: 400px;"></div>
+
+    <div class="test-section">
+        <h2>测试7: 大图表（响应式测试）</h2>
+        <p>测试大型图表在侧边栏中的自适应显示：</p>
+        <pre><code class="language-mermaid">flowchart TD
+    A[Start] --> B{Step 1}
+    B -->|Yes| C[Step 2]
+    C --> D{Step 3}
+    D -->|Option 1| E[Detailed Step 4]
+    D -->|Option 2| F[Detailed Step 5]
+    E --> G[Step 6]
+    F --> G
+    G --> H{Step 7}
+    H -->|Success| I[End Success]
+    H -->|Failure| J[End Failure]
+    I --> K[Process Complete]
+    J --> L[Handle Error]
+    K --> M[Final Step]
+    L --> M
+    M --> N[*]</code></pre>
+    </div>
+
+    <script>
+        // Log that the test page has loaded
+        console.log('Mermaid Sidebar Test Page Loaded');
+        console.log('This page contains multiple Mermaid diagrams for testing the sidebar feature');
+    </script>
+</body>
+</html>
