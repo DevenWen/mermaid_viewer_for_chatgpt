@@ -28,7 +28,7 @@ function injectStyles() {
 }
 
 // Initialize Mermaid with proper configuration
-mermaid.initialize({ 
+mermaid.initialize({
   startOnLoad: false,
   securityLevel: 'loose',
   theme: 'default',
@@ -41,7 +41,7 @@ console.log('Mermaid library loaded and initialized')
 function isDarkMode() {
   // Check for dark mode class on body or html elements
   if (document.body.classList.contains('dark') ||
-      document.documentElement.classList.contains('dark')) {
+    document.documentElement.classList.contains('dark')) {
     return true
   }
 
@@ -61,6 +61,156 @@ function isDarkMode() {
   // Check for prefers-color-scheme media query
   return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
 }
+
+// Function to format Mermaid error for user-friendly display
+function formatMermaidError(error: unknown): string {
+  if (!error) {
+    return 'Unknown error occurred'
+  }
+
+  // Extract error message
+  let errorMessage = 'Rendering failed'
+
+  if (error instanceof Error) {
+    errorMessage = error.message
+  } else if (typeof error === 'string') {
+    errorMessage = error
+  } else if (typeof error === 'object' && error !== null) {
+    // Try to extract message from object
+    const errorObj = error as any
+    if (errorObj.message) {
+      errorMessage = errorObj.message
+    } else if (errorObj.str) {
+      // Mermaid sometimes uses 'str' property
+      errorMessage = errorObj.str
+    } else {
+      errorMessage = JSON.stringify(error)
+    }
+  }
+
+  return errorMessage
+}
+
+// Function to cleanup Mermaid error divs created by the library
+function cleanupMermaidErrorDivs() {
+  try {
+    // Mermaid creates error divs with specific patterns
+    // We need to be careful not to remove our own elements
+
+    // Find all divs in the document
+    const allDivs = document.querySelectorAll('div')
+
+    allDivs.forEach((div) => {
+      // IMPORTANT: Skip our own elements to avoid removing modal/sidebar
+      const classList = Array.from(div.classList)
+      const isOurElement = classList.some(className =>
+        className.startsWith('mermaid-modal') ||
+        className.startsWith('mermaid-sidebar') ||
+        className.startsWith('mermaid-chart') ||
+        className.startsWith('mermaid-error') ||
+        className.startsWith('mermaid-loading') ||
+        className.startsWith('mermaid-render') ||
+        className.startsWith('mermaid-close') ||
+        className.startsWith('mermaid-svg')
+      )
+
+      // Skip our own elements
+      if (isOurElement) {
+        return
+      }
+
+      // Also skip if this is a child of our modal or sidebar
+      const isInsideOurElements = div.closest('.mermaid-modal-overlay, .mermaid-sidebar') !== null
+      if (isInsideOurElements) {
+        return
+      }
+
+      // Check if this is a Mermaid error div
+      const id = div.id
+      const innerHTML = div.innerHTML
+      const textContent = div.textContent || ''
+
+      // Pattern 1: ID matches 'd' + numbers and contains 'Syntax error' or 'mermaid version'
+      // This is the most reliable pattern for Mermaid error divs
+      const isMermaidErrorById = /^d\d+$/.test(id) &&
+        (textContent.includes('Syntax error') ||
+          textContent.includes('mermaid version'))
+
+      // Pattern 2: Check for specific styling that Mermaid uses for error divs
+      // Mermaid error divs are usually fixed position at bottom-left
+      const styles = window.getComputedStyle(div)
+      const hasFixedPosition = styles.position === 'fixed'
+      const hasHighZIndex = parseInt(styles.zIndex) > 1000
+      const isBottomLeft = styles.bottom !== 'auto' && styles.left !== 'auto'
+      const isTopOrRightAuto = styles.top === 'auto' || styles.right === 'auto'
+      const isMermaidErrorByStyle = hasFixedPosition && hasHighZIndex && isBottomLeft && isTopOrRightAuto &&
+        (textContent.includes('Syntax error') || textContent.includes('mermaid version'))
+
+      // Remove if it matches patterns AND is not our element
+      if (isMermaidErrorById || isMermaidErrorByStyle) {
+        console.log('Cleaning up Mermaid error div:', id, textContent.substring(0, 50))
+        div.remove()
+      }
+    })
+
+    console.log('Mermaid error divs cleanup completed')
+  } catch (error) {
+    console.error('Error during Mermaid error div cleanup:', error)
+  }
+}
+
+// Function to setup observer for Mermaid error divs
+function setupMermaidErrorObserver() {
+  // Create observer to watch for new error divs
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const element = node as HTMLElement
+
+          // Check if this looks like a Mermaid error div
+          if (element.tagName === 'DIV') {
+            const id = element.id
+            const textContent = element.textContent || ''
+
+            // Pattern 1: ID matches 'd' + numbers (Mermaid standard)
+            const isIdPattern = /^d\d+$/.test(id)
+
+            // Pattern 2: Error text
+            const hasErrorText = textContent.includes('Syntax error') ||
+              textContent.includes('mermaid version')
+
+            if ((isIdPattern && hasErrorText) || hasErrorText) {
+              // Check it's not ours
+              const classList = Array.from(element.classList)
+              const isOurElement = classList.some(className =>
+                className.startsWith('mermaid-')
+              )
+
+              if (!isOurElement) {
+                // Double check style traits if unsure
+                const styles = window.getComputedStyle(element)
+                if (styles.position === 'fixed' || isIdPattern) {
+                  console.log('Observer detected Mermaid error div, removing:', id)
+                  element.remove()
+                }
+              }
+            }
+          }
+        }
+      })
+    })
+  })
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  })
+
+  console.log('Mermaid error observer setup')
+}
+
+
 
 // Function to detect if code content is Mermaid diagram
 function isMermaidCode(codeText: string): boolean {
@@ -87,13 +237,13 @@ function createRenderButton(element: HTMLElement) {
   if (element.hasAttribute('data-mermaid-processed')) {
     return
   }
-  
+
   // Mark element as processed
   element.setAttribute('data-mermaid-processed', 'true')
 
   // Determine if we're in dark mode
   const darkMode = isDarkMode()
-  
+
   // Create render button with link-like styling
   const renderButton = document.createElement('a')
   renderButton.id = 'RenderDigram'
@@ -149,7 +299,7 @@ function createRenderButton(element: HTMLElement) {
     element.parentNode!.insertBefore(sidebarButton, renderButton.nextSibling)
     element.parentNode!.insertBefore(chartContainer, sidebarButton.nextSibling)
   }
-  
+
   console.log('Created render button for mermaid element')
 }
 
@@ -170,7 +320,7 @@ function setupZoomPan(modal: HTMLElement): () => void {
 
   if (!chartContainer || !chartContent) {
     console.warn('Chart container or content not found for zoom/pan setup')
-    return () => {}
+    return () => { }
   }
 
   // Reset zoom and pan state
@@ -214,7 +364,7 @@ function setupZoomPan(modal: HTMLElement): () => void {
     isDragging = true
     dragStartX = e.clientX - panX
     dragStartY = e.clientY - panY
-    ;(chartContainer as HTMLElement).style.cursor = 'grabbing'
+      ; (chartContainer as HTMLElement).style.cursor = 'grabbing'
   }
 
   chartContainer.addEventListener('mousedown', handleMouseDown)
@@ -234,7 +384,7 @@ function setupZoomPan(modal: HTMLElement): () => void {
   const handleMouseUp = () => {
     if (isDragging) {
       isDragging = false
-      ;(chartContainer as HTMLElement).style.cursor = 'grab'
+        ; (chartContainer as HTMLElement).style.cursor = 'grab'
     }
   }
 
@@ -421,7 +571,11 @@ function moveChartToSidebar(codeContent: string, sourceElement: HTMLElement, sou
     })
     .catch((error) => {
       console.error('Error rendering chart in sidebar:', error)
-      contentArea.innerHTML = `<div class="mermaid-error${darkMode ? ' dark-mode' : ''}">Error rendering chart: ${(error as Error).message}</div>`
+
+      // Format the error message
+      const errorMessage = formatMermaidError(error)
+
+      contentArea.innerHTML = `<div class="mermaid-error${darkMode ? ' dark-mode' : ''}">Error rendering chart: ${errorMessage}</div>`
     })
 }
 
@@ -439,8 +593,8 @@ function updateSourcePositionPlaceholder(container: HTMLElement, button: HTMLEle
   // Insert placeholder
   container.parentNode!.insertBefore(placeholder, container.nextSibling)
 
-  // Store placeholder reference
-  ;(container as any).placeholderElement = placeholder
+    // Store placeholder reference
+    ; (container as any).placeholderElement = placeholder
 }
 
 // Function to restore chart to original position
@@ -458,7 +612,7 @@ function restoreChartToOriginal() {
     if (placeholder.parentNode) {
       placeholder.parentNode.removeChild(placeholder)
     }
-    ;(container as any).placeholderElement = null
+    ; (container as any).placeholderElement = null
   }
 
   // Show the button again
@@ -546,15 +700,22 @@ function renderMermaidChartInModal(codeContent: string, darkMode: boolean): Prom
           theme: originalTheme
         })
 
+        // Clean up any Mermaid error divs after successful render
+        setTimeout(() => cleanupMermaidErrorDivs(), 100)
+
         resolve(chartContent)
       }).catch((error: unknown) => {
         console.error('Error rendering Mermaid chart:', error)
-        reject(error)
 
         // Revert to original theme
         mermaid.mermaidAPI.updateSiteConfig({
           theme: originalTheme
         })
+
+        // Clean up Mermaid error divs after error
+        setTimeout(() => cleanupMermaidErrorDivs(), 100)
+
+        reject(error)
       })
     } catch (error: unknown) {
       console.error('Error rendering Mermaid chart:', error)
@@ -604,7 +765,25 @@ async function openMermaidModal(codeContent: string, darkMode: boolean) {
     console.log('Modal opened successfully')
   } catch (error) {
     console.error('Error opening modal:', error)
-    chartContainer.innerHTML = `<div class="mermaid-error${darkMode ? ' dark-mode' : ''}">Error rendering chart: ${(error as Error).message}</div>`
+
+    // Format the error message
+    const errorMessage = formatMermaidError(error)
+
+    // Display error in the container
+    chartContainer.innerHTML = `<div class="mermaid-error${darkMode ? ' dark-mode' : ''}">Error rendering chart: ${errorMessage}</div>`
+
+    // Add modal to document even on error so user can see it
+    if (!modal.parentNode) {
+      document.body.appendChild(modal)
+    }
+
+    // Trigger animation
+    setTimeout(() => {
+      modal.classList.add('active')
+    }, 10)
+
+    // Setup event listeners so user can close the modal
+    setupModalEventListeners(modal)
   }
 }
 
@@ -708,6 +887,9 @@ function init() {
 
   // Inject styles into the page
   injectStyles()
+
+  // Setup error observer
+  setupMermaidErrorObserver()
 
   // Process elements when DOM is ready
   if (document.readyState === 'loading') {
